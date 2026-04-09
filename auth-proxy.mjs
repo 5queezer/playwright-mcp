@@ -174,11 +174,23 @@ function proxyMcp(req, res) {
   const headers = { ...req.headers };
   delete headers.authorization;
   delete headers.host;
+  // Cloudflare sends HTTP/2 pseudo-headers that break Node http.request
+  for (const k of Object.keys(headers)) { if (k.startsWith(':')) delete headers[k]; }
   headers.host = new URL(UPSTREAM).host;
+  headers.connection = 'keep-alive';
 
   const proxy = http.request(upstream, { method: req.method, headers }, (upRes) => {
-    res.writeHead(upRes.statusCode, upRes.headers);
-    upRes.pipe(res, { end: true });
+    const ct = upRes.headers['content-type'] || '';
+    console.log(`  ↳ upstream ${upRes.statusCode} ${ct.split(';')[0]}`);
+    // Disable buffering for SSE responses
+    if (ct.includes('text/event-stream')) {
+      res.writeHead(upRes.statusCode, { ...upRes.headers, 'X-Accel-Buffering': 'no', 'Cache-Control': 'no-cache' });
+      upRes.on('data', (chunk) => { res.write(chunk); });
+      upRes.on('end', () => { res.end(); });
+    } else {
+      res.writeHead(upRes.statusCode, upRes.headers);
+      upRes.pipe(res, { end: true });
+    }
   });
   proxy.on('error', (e) => {
     console.error('Upstream error:', e.message);
