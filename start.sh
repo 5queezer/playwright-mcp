@@ -5,8 +5,7 @@ set -e
 node /app/cli.js \
   --headless --browser chromium --no-sandbox \
   --port 8931 --host 127.0.0.1 \
-  --allowed-hosts '*' \
-  --isolated &
+  --allowed-hosts '*' &
 
 # Wait for Playwright MCP to be ready
 for i in $(seq 1 30); do
