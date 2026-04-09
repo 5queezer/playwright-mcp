@@ -2,10 +2,16 @@
 set -e
 
 # Start Playwright MCP server in the background (internal, port 8931)
+STORAGE_STATE_ARG=""
+if [ -f /data/storage-state.json ]; then
+  STORAGE_STATE_ARG="--storage-state /data/storage-state.json"
+fi
+
 node /app/cli.js \
   --headless --browser chromium --no-sandbox \
   --port 8931 --host 127.0.0.1 \
-  --allowed-hosts '*' &
+  --allowed-hosts '*' \
+  $STORAGE_STATE_ARG &
 
 # Wait for Playwright MCP to be ready
 for i in $(seq 1 30); do
