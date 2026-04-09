@@ -200,6 +200,8 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, PUBLIC_URL);
   const path = url.pathname;
 
+  console.log(`${req.method} ${path}${bearerToken(req) ? ' [auth]' : ''}`);
+
   try {
     if (path === '/.well-known/oauth-authorization-server') return metadata(req, res);
     if (path === '/.well-known/oauth-protected-resource') return resourceMetadata(req, res);
@@ -207,7 +209,8 @@ const server = http.createServer(async (req, res) => {
     if (path === '/authorize') return await authorize(req, res);
     if (path === '/token' && req.method === 'POST') return await token(req, res);
     if (path === '/mcp' || path.startsWith('/mcp/')) return proxyMcp(req, res);
-    if (path === '/sse') return proxyMcp(req, res); // legacy SSE endpoint
+    if (path === '/sse') return proxyMcp(req, res);      // legacy SSE stream
+    if (path === '/messages') return proxyMcp(req, res);  // legacy SSE message endpoint
 
     // Health check
     if (path === '/healthz') return json(res, 200, { status: 'ok' });
